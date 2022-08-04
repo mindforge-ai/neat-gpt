@@ -1,4 +1,3 @@
-from torch import embedding
 from vanilla_gpt import GPT
 import torch
 
