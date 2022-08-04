@@ -6,6 +6,8 @@ authors = ["William Eliot <75908561+wjeliot@users.noreply.github.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
+torch = "^1.12.0"
+black = "^22.6.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
