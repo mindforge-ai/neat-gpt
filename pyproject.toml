@@ -6,15 +6,11 @@ authors = ["William Eliot <75908561+wjeliot@users.noreply.github.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-torch = "1.11.0+cu113"
 black = "^22.6.0"
 numpy = "^1.23.1"
-rich = "^12.5.1"
-
-[[tool.poetry.source]]
-name = "pytorch"
-url = "https://download.pytorch.org/whl/cu113"
-secondary = true
+rich = "^12.5.1" 
+torch = {url = "https://download.pytorch.org/whl/cu116/torch-1.12.1%2Bcu116-cp38-cp38-linux_x86_64.whl"}
+wandb = "^0.13.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
