@@ -9,6 +9,9 @@ class MultiHeadAttention(nn.Module):
         super().__init__()
         self.embedding_dim = config["embedding_dim"]
         self.num_attention_heads = config["num_attention_heads"]
+        assert (
+            self.embedding_dim % self.num_attention_heads == 0
+        ), "embedding_dim must be divisible by num_attention_heads"
         self.embedding_dim_per_attention_head = (
             self.embedding_dim // self.num_attention_heads
         )

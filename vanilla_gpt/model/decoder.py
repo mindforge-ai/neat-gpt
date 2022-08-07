@@ -18,7 +18,9 @@ class Decoder(nn.Module):
     def forward(self, X):
         embedded_tokens = self.token_embedding(X)
 
-        position_indices = torch.arange(0, self.context_len).unsqueeze(0)
+        position_indices = torch.arange(0, self.context_len, device=X.device).unsqueeze(
+            0
+        )
         embedded_positions = self.position_embedding(position_indices)
 
         hidden_states = embedded_tokens + embedded_positions

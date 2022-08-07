@@ -5,19 +5,17 @@ from rich.progress import track
 
 config = {
     "num_layers": 12,
-    "embedding_dim": 2048,
+    "embedding_dim": 128,
     "num_attention_heads": 16,
     "context_len": 2048,
-    "vocab_len": 50000,
+    "vocab_len": 50257,
 }
-
-# I need a new version of Poetry and PyTorch so that I can run this on GPU
 
 model = GPT(config).to(0)
 
 dataset = torch.load("./example.pt")
 
-opt = torch.optim.Adam(lr=0.01, params=model.parameters())
+opt = torch.optim.SGD(lr=0.01, params=model.parameters())
 
 model.train()
 
