@@ -11,7 +11,7 @@ model_config = {
     "vocab_len": 50257,
 }
 
-training_config = {"use_wandb": True}
+training_config = {"use_wandb": False}
 
 model = GPT(model_config).to(0)
 
@@ -19,12 +19,15 @@ dataset = torch.load("./example.pt")
 
 opt = torch.optim.SGD(lr=0.01, params=model.parameters())
 
+# original code uses tf.nn.sparse_softmax_cross_entropy_with_logits;
+loss_function = torch.nn.CrossEntropyLoss()
+
 model.train()
 
 if training_config["use_wandb"]:
     import wandb
 
-    wandb.init(project="my-awesome-project")
+    wandb.init(project="gpt")
 
 for sequence in track(dataset):
     opt.zero_grad()
@@ -41,12 +44,10 @@ for sequence in track(dataset):
     target = raw[1 : model_config["context_len"] + pad_len + 1]
     target = target.to(0).unsqueeze(0)
 
-    # original gpt uses sparse_softmax_cross_entropy_with_logits
-    loss = F.cross_entropy(
-        output.flatten(0, -2),
-        target.flatten(),
-        reduction="mean",
-    )
+    # tensor views are used to stack all batches and perform cross entropy across all logits and targets
+    # but I wonder if there is a loss of useful data here: are non-argmaxed logit values compared with 0 in the target?
+    loss = loss_function(output.view(-1, model_config["vocab_len"]), target.view(-1))
+
     if training_config["use_wandb"]:
         wandb.log({"loss": loss.item()})
 
