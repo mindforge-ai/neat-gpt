@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from .layer import Layer
+from .block import Block
 
 
 class Decoder(nn.Module):
@@ -10,13 +10,16 @@ class Decoder(nn.Module):
         self.token_embedding = nn.Embedding(
             config["vocab_len"], config["embedding_dim"]
         )
+        nn.init.normal_(self.token_embedding.weight, std=0.02)
+        self.token_embedding_dropout = nn.Dropout(0.2)  # replace
         self.position_embedding = nn.Embedding(
             config["context_len"], config["embedding_dim"]
         )
-        self.stack = nn.ModuleList([Layer(config) for _ in range(config["num_layers"])])
+        self.stack = nn.ModuleList([Block(config) for _ in range(config["num_layers"])])
 
     def forward(self, X):
         embedded_tokens = self.token_embedding(X)
+        embedded_tokens = self.token_embedding_dropout(X)
 
         position_indices = torch.arange(0, self.context_len, device=X.device).unsqueeze(
             0

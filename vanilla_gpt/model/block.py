@@ -3,7 +3,7 @@ from .multi_head_attention import MultiHeadAttention
 from .mlp import MLP
 
 
-class Layer(nn.Module):
+class Block(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.layernorm1 = nn.LayerNorm(config["embedding_dim"])
@@ -13,12 +13,10 @@ class Layer(nn.Module):
 
     def forward(self, X):
         residual = X
-        X = self.layernorm1(X)
         X = self.attention(X)
-        X = residual + X
+        X = self.layernorm1(residual + X)
 
         residual = X
-        X = self.layernorm2(X)
         X = self.mlp(X)
-        X = residual + X
+        X = self.layernorm2(residual + X)
         return X

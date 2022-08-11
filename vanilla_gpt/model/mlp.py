@@ -1,13 +1,13 @@
 from torch import nn
-from .utils import GELU
+from .utils import GELU, Conv1D
 
 
 class MLP(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.inwards = nn.Linear(config["embedding_dim"], 4 * config["embedding_dim"])
+        self.inwards = Conv1D(4 * config["embedding_dim"], 1, config["embedding_dim"])
         self.activation = GELU()
-        self.outwards = nn.Linear(4 * config["embedding_dim"], config["embedding_dim"])
+        self.outwards = Conv1D(config["embedding_dim"], 1, 4 * config["embedding_dim"])
 
     def forward(self, X):
         X = self.inwards(X)

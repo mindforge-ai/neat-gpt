@@ -2,6 +2,7 @@ import math
 import torch
 from torch import nn
 import torch.nn.functional as F
+from .utils import Conv1D
 
 
 class MultiHeadAttention(nn.Module):
@@ -16,10 +17,10 @@ class MultiHeadAttention(nn.Module):
             self.embedding_dim // self.num_attention_heads
         )
 
-        self.to_queries_keys_values = nn.Linear(
-            config["embedding_dim"], 3 * config["embedding_dim"]
+        self.to_queries_keys_values = Conv1D(
+            3 * config["embedding_dim"], 1, config["embedding_dim"]
         )
-        self.outwards = nn.Linear(config["embedding_dim"], config["embedding_dim"])
+        self.outwards = Conv1D(config["embedding_dim"], 1, config["embedding_dim"])
 
         self.register_buffer(
             "mask",
@@ -30,6 +31,9 @@ class MultiHeadAttention(nn.Module):
                 ).view(1, 1, config["context_len"], config["context_len"])
             ),
         )
+
+        self.attention_dropout = nn.Dropout(config["attention_dropout"])
+        self.outwards_dropout = nn.Dropout(config["outwards_dropout"])
 
     def forward(self, X):
         (
@@ -62,19 +66,21 @@ class MultiHeadAttention(nn.Module):
             self.embedding_dim_per_attention_head,
         ).transpose(1, 2)
 
-        scaled_scores = torch.matmul(queries, keys.transpose(-2, -1)) * (
-            1 / math.sqrt(self.embedding_dim)
-        )
+        scaled_scores = torch.matmul(queries, keys.transpose(-2, -1)) * torch.rsqrt(self.embedding_dim)
+        
         masked_scores = scaled_scores.masked_fill(
             self.mask[:, :, :seq_len, :seq_len] == 0, float("-inf")
         )
 
-        softmaxed_scores = F.softmax(masked_scores, dim=-1)
+        dropped_scores = self.attention_dropout(masked_scores)
+
+        softmaxed_scores = F.softmax(dropped_scores, dim=-1)
         attention_values = torch.matmul(softmaxed_scores, values)
         attention_values = (
             attention_values.transpose(1, 2)
             .contiguous()
             .view(batch_len, seq_len, self.embedding_dim)
-        )
+        ) # merge heads
         outputs = self.outwards(attention_values)
+        outputs = self.outwards_dropout(outputs)
         return outputs

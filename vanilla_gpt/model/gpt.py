@@ -1,5 +1,6 @@
 from torch import nn
 from .decoder import Decoder
+import torch
 
 
 class GPT(nn.Module):
@@ -9,6 +10,9 @@ class GPT(nn.Module):
         self.clm_head = nn.Linear(
             config["embedding_dim"], config["vocab_len"], bias=False
         )
+        self.clm_head.weight = (
+            self.decoder.token_embedding.weight
+        )  # weight tying, although I don't think this works fully.
 
     def forward(self, X):
         hidden_states = self.decoder(X)
