@@ -12,8 +12,6 @@ model_config = {
     "outwards_dropout": 0.5,
 }
 
-training_config = {"use_wandb": False}
-
 model = GPT(model_config).to(0)
 
 dataset = torch.load("./example.pt")

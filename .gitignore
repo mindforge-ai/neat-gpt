@@ -1,4 +1,2 @@
 __pycache__
-*.pt
-poetry.lock
-wandb
+venv
