@@ -1,4 +1,4 @@
-from vanilla_gpt import __version__
+from neat_gpt import __version__
 
 
 def test_version():
