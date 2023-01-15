@@ -66,8 +66,10 @@ class MultiHeadAttention(nn.Module):
             self.embedding_dim_per_attention_head,
         ).transpose(1, 2)
 
-        scaled_scores = torch.matmul(queries, keys.transpose(-2, -1)) * torch.rsqrt(self.embedding_dim)
-        
+        scaled_scores = torch.matmul(queries, keys.transpose(-2, -1)) * torch.rsqrt(
+            self.embedding_dim
+        )
+
         masked_scores = scaled_scores.masked_fill(
             self.mask[:, :, :seq_len, :seq_len] == 0, float("-inf")
         )
@@ -80,7 +82,7 @@ class MultiHeadAttention(nn.Module):
             attention_values.transpose(1, 2)
             .contiguous()
             .view(batch_len, seq_len, self.embedding_dim)
-        ) # merge heads
+        )  # merge heads
         outputs = self.outwards(attention_values)
         outputs = self.outwards_dropout(outputs)
         return outputs
