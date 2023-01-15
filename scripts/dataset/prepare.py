@@ -7,6 +7,7 @@ from rich import progress
 import argparse
 from pathlib import Path
 import torch
+import multiprocessing
 from multiprocessing import Pool
 
 
@@ -155,9 +156,9 @@ if __name__ == "__main__":
     parser.add_argument("--merges-path", type=str, required=True)
     parser.add_argument("--input-dir", type=str, required=True)
     parser.add_argument("--output-dir", type=str, required=True)
-    parser.add_argument("--sequence-length", type=int, required=True)
+    parser.add_argument("--context-len", type=int, required=True)
     parser.add_argument("--pad-token-id", type=int, required=True) # OpenAI's vocabulary doesn't include one, but 0 (the out-of-vocabulary token id) should work (?)
-    parser.add_argument("--num-processes", type=int, default=1)
+    parser.add_argument("--num-processes", type=int, default=1) # One file will be saved for each process
     args = parser.parse_args()
 
     encoder = TextEncoder(vocab_path=args.vocab_path, merges_path=args.merges_path)
@@ -172,12 +173,9 @@ if __name__ == "__main__":
                 text = f.read()
                 token_ids = encoder.encode(text)
                 all_token_ids.append(token_ids)
+        all_token_ids = pad_and_truncate(all_token_ids, max_length=args.context_len, pad_token_id=args.pad_token_id)
+        torch.save(torch.tensor(all_token_ids, dtype=torch.int), args.output_dir + f"bookscorpus-{multiprocessing.current_process()._identity[0] - 1}.pt")
         return all_token_ids
 
     with Pool(args.num_processes) as pool:
         all_token_ids = pool.map(tokenize_files, txt_file_paths)
-
-    flattended_all_token_ids = [item for sublist in all_token_ids for item in sublist]
-    padded_and_truncated_token_ids = pad_and_truncate(flattended_all_token_ids, max_length=args.sequence_length, pad_token_id=args.pad_token_id)
-
-    torch.save(torch.tensor(padded_and_truncated_token_ids, dtype=torch.int), args.output_dir + "all_token_ids.pt")

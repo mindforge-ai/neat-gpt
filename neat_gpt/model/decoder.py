@@ -19,7 +19,7 @@ class Decoder(nn.Module):
 
     def forward(self, X):
         embedded_tokens = self.token_embedding(X)
-        embedded_tokens = self.token_embedding_dropout(X)
+        embedded_tokens = self.token_embedding_dropout(embedded_tokens)
 
         position_indices = torch.arange(0, self.context_len, device=X.device).unsqueeze(
             0

@@ -66,16 +66,14 @@ class MultiHeadAttention(nn.Module):
             self.embedding_dim_per_attention_head,
         ).transpose(1, 2)
 
-        scaled_scores = torch.matmul(queries, keys.transpose(-2, -1)) * torch.rsqrt(
-            self.embedding_dim
-        )
+        scaled_scores = torch.matmul(queries, keys.transpose(-2, -1)) * torch.sqrt(
+            torch.tensor(self.embedding_dim))
 
         masked_scores = scaled_scores.masked_fill(
             self.mask[:, :, :seq_len, :seq_len] == 0, float("-inf")
         )
 
-        dropped_scores = self.attention_dropout(masked_scores)
-
+        dropped_scores = masked_scores # self.attention_dropout(masked_scores) dropout here not working
         softmaxed_scores = F.softmax(dropped_scores, dim=-1)
         attention_values = torch.matmul(softmaxed_scores, values)
         attention_values = (
@@ -83,6 +81,7 @@ class MultiHeadAttention(nn.Module):
             .contiguous()
             .view(batch_len, seq_len, self.embedding_dim)
         )  # merge heads
+
         outputs = self.outwards(attention_values)
         outputs = self.outwards_dropout(outputs)
         return outputs

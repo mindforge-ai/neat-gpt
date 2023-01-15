@@ -1,6 +1,5 @@
 from torch import nn
 from .decoder import Decoder
-import torch
 
 
 class GPT(nn.Module):

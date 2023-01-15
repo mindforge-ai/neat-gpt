@@ -1,47 +1,58 @@
 from neat_gpt import GPT
 import torch
 from rich.progress import track
+import wandb
+from torch.utils.data import Dataset, DataLoader
+from pathlib import Path
+import torch.nn.functional as F
 
 model_config = {
     "num_layers": 12,
     "embedding_dim": 1024,
     "num_attention_heads": 16,
-    "context_len": 2048,
+    "context_len": 511,
     "vocab_len": 50257,
     "attention_dropout": 0.5,
     "outwards_dropout": 0.5,
+    "num_epochs": 100,
+    "batch_size": 2
 }
 
 model = GPT(model_config).to(0)
 
-dataset = torch.load("./example.pt")
+class BooksCorpus(Dataset):
+    def __init__(self, directory):
+        self.data = torch.load("../data/books1/bookscorpus-2.pt")
 
-opt = torch.optim.SGD(lr=0.01, params=model.parameters())
+    def __len__(self):
+        return self.data.size(0)
+
+    def __getitem__(self, idx):
+        return self.data[idx]
+
+training_data = BooksCorpus(None)
+train_dataloader = DataLoader(training_data, batch_size=model_config["batch_size"], shuffle=True)
+
+opt = torch.optim.AdamW(model.parameters(), lr=0.00025)
 
 # original code uses tf.nn.sparse_softmax_cross_entropy_with_logits;
-loss_function = torch.nn.CrossEntropyLoss()
 
 model.train()
 
+# wandb.init(project="neat-gpt", config=model_config, entity="mindforge-ai")
 
-for sequence in track(dataset):
-    opt.zero_grad()
-    raw = sequence
-    source = raw[: model_config["context_len"]].to(torch.int32)
-    source_len = source.size(0)
-    pad_len = model_config["context_len"] - source_len
-    if pad_len > 0:
-        source = torch.cat(
-            [source, torch.zeros([1, pad_len], dtype=torch.int32)], dim=1
-        )
-    source = source.to(0).unsqueeze(0)
-    output = model(source)
-    target = raw[1 : model_config["context_len"] + pad_len + 1]
-    target = target.to(0).unsqueeze(0)
+for epoch in range(model_config["num_epochs"]):
+    for batch in track(train_dataloader):
+        opt.zero_grad()
+        raw = batch
+        source = raw[:, : model_config["context_len"]]
+        source = source.to(0)
+        output = model(source) # (batch_len, seq_len, vocab_len)
+        target = raw[:, 1:model_config["context_len"] + 1] # (batch_len, seq_len)
+        target = target.to(0).to(torch.int64)
 
-    # tensor views are used to stack all batches and perform cross entropy across all logits and targets
-    # but I wonder if there is a loss of useful data here: are non-argmaxed logit values compared with 0 in the target?
-    loss = loss_function(output.view(-1, model_config["vocab_len"]), target.view(-1))
+        loss = F.cross_entropy(output.view(-1, output.size(-1)), target.view(-1)) # collapse batch_len and seq_len dimensions to batch_len * seq_len
+        wandb.log({"loss": loss.item()})
 
-    loss.backward()
-    opt.step()
+        loss.backward()
+        opt.step()
