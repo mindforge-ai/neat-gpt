@@ -14,3 +14,5 @@ Minimal, annotated implementation of GPT in PyTorch. STILL IN DEVELOPMENT
 - [] add dropouts for training
 - [] initialise weights with the same scheme as finetune-transformer-lm
 - [] is nn.LayerNorm the same as finetune-transformer-lm implementation of norm?
+
+BooksCorpus: https://the-eye.eu/public/AI/pile_preliminary_components/books1.tar.gz
